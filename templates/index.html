@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ACEest Fitness & Gym</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 2rem; }
+      .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem 1.25rem; max-width: 720px; }
+      .row { display: flex; gap: .75rem; margin-top: .5rem; }
+      input, button { padding: .6rem .8rem; border-radius: 10px; border: 1px solid #ccc; }
+      button { cursor: pointer; }
+      ul { line-height: 1.8; }
+      .muted { color: #555; }
+      .pill { display: inline-block; padding: .1rem .5rem; border-radius: 999px; background: #eee; font-size: .85rem; }
+    </style>
+  </head>
+  <body>
+    <h1>ACEest Fitness & Gym</h1>
+    <div class="card">
+      <h2 class="muted">Add Workout</h2>
+      <form id="workout-form" class="row" onsubmit="return submitForm(event)">
+        <input type="text" name="workout" placeholder="Workout (e.g., Push-ups)" required />
+        <input type="number" name="duration" placeholder="Duration (minutes)" min="1" required />
+        <button type="submit">Add</button>
+        <button type="button" onclick="clearAll()">Clear</button>
+      </form>
+      <h2 class="muted">Logged Workouts <span class="pill" id="count">0</span></h2>
+      <ul id="list"></ul>
+    </div>
+    <script>
+      async function refresh() {
+        const res = await fetch('/workouts');
+        const data = await res.json();
+        document.getElementById('count').textContent = data.count;
+        const list = document.getElementById('list');
+        list.innerHTML = '';
+        data.items.forEach((w, i) => {
+          const li = document.createElement('li');
+          li.textContent = `${i+1}. ${w.workout} — ${w.duration} min`;
+          list.appendChild(li);
+        });
+      }
+      async function submitForm(e){
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const body = Object.fromEntries(formData.entries());
+        const res = await fetch('/workouts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (!res.ok){
+          const err = await res.json().catch(()=>({error: 'Invalid data'}));
+          alert(err.error || 'Error');
+        } else {
+          form.reset();
+          await refresh();
+        }
+        return false;
+      }
+      async function clearAll(){
+        await fetch('/workouts', { method: 'DELETE' });
+        await refresh();
+      }
+      refresh();
+    </script>
+  </body>
+</html>
